@@ -1,12 +1,5 @@
-Claro, mestre. Cria ou substitui o arquivo:
 
-```txt
-README.md
-```
-
-por este conteúdo:
-
-````md
+````
 # Okinawa Bot API
 
 Backend em Python com FastAPI para o bot do projeto PI5.
