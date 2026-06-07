@@ -18,10 +18,10 @@ def get_acao_aleatoria_turno(payload: dict) -> dict:
             "professor": "CLARO",
             "move": {
                 "row": 1,
-                "col": 0
+                "col": 2
             },
-            "build": {
-                "row": 1,
-                "col": 1
+            "mentor_at": {
+                "row": 0,
+                "col": 2
             }
         }
