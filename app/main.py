@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.bot.agent import process_request
+from app.core.logger import registrar_payload 
 
 app = FastAPI(title="Okinawa IA Bot Backend")
 
@@ -26,10 +27,9 @@ async def move(request: Request):
         payload = await request.json()
     except Exception:
         return {} #erro de leitura
-
-    print(f"\n[FASE: {payload.get('turn_phase')}] PAYLOAD RECEBIDO")
     
-    #devolucao do dict certinho
+    registrar_payload(payload)
+    
     response_data = process_request(payload)
     
     return response_data
