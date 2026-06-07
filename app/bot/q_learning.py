@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import copy
 from app.bot.state_parser import get_estado_local, get_acoes_validas
 
 Q_TABLE_PATH = os.path.join(os.path.dirname(__file__), "..", "storage", "q_table.json")
@@ -25,7 +26,6 @@ def save_q_table(q_table: dict): #cria o dir se nao existe
 
 def calcular_recompensa(tabuleiro: list, pos_atual: dict, acao: dict) -> float:
     recompensa = 0.0
-    
     nivel_atual = tabuleiro[pos_atual["row"]][pos_atual["col"]].get("level", 0)
     nivel_destino = tabuleiro[acao["move_to"]["row"]][acao["move_to"]["col"]].get("level", 0)
     
@@ -36,7 +36,6 @@ def calcular_recompensa(tabuleiro: list, pos_atual: dict, acao: dict) -> float:
     if nivel_destino == 3:
         recompensa += 1000.0
         
-    
     if nivel_destino < nivel_atual: # descer de nivel
         recompensa -= 5.0
         
@@ -82,13 +81,28 @@ def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int
                 
     
     acao_str = f"M{acao_escolhida['move_to']['row']},{acao_escolhida['move_to']['col']}_B{acao_escolhida['mentor_at']['row']},{acao_escolhida['mentor_at']['col']}"
-    
     q_atual = q_table[estado_atual].get(acao_str, 0.0) # nota antiga
-
     recompensa = calcular_recompensa(tabuleiro, {"row": pos_linha, "col": pos_col}, acao_escolhida)
     
-    # simplificacao da equacao de bellman (feito com ajuda de IA)
-    q_novo = q_atual + ALPHA * (recompensa - q_atual)
+    #previsao do estado futuro
+    tab_futuro = copy.deepcopy(tabuleiro)
+    tab_futuro[pos_linha][pos_col]["professor"] = None #posicao antiga 
+    tab_futuro[acao_escolhida["move_to"]["row"]][acao_escolhida["move_to"]["col"]]["professor"] = professor_nome # posicao nova
+    tab_futuro[acao_escolhida["mentor_at"]["row"]][acao_escolhida["mentor_at"]["col"]]["level"] += 1 # aluno mentorado
+    
+    # estado local e opcoes futuras
+    estado_futuro = get_estado_local(tab_futuro, acao_escolhida["move_to"]["row"], acao_escolhida["move_to"]["col"])
+    acoes_futuras = get_acoes_validas(tab_futuro, acao_escolhida["move_to"]["row"], acao_escolhida["move_to"]["col"])
+    
+    # nota max futuro
+    max_q_futuro = 0.0
+    if acoes_futuras:
+        if estado_futuro in q_table:
+            notas_futuras = q_table[estado_futuro].values()
+            if notas_futuras:
+                max_q_futuro = max(notas_futuras)
+                
+    q_novo = q_atual + ALPHA * (recompensa + (GAMMA * max_q_futuro) - q_atual) #eq de bellman
     
     q_table[estado_atual][acao_str] = q_novo
     save_q_table(q_table)
