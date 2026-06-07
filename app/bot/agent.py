@@ -3,6 +3,7 @@ import json
 from app.bot.heuristic import get_posicionamento_aleatorio, get_acao_aleatoria_turno
 from app.bot.q_learning import escolher_acao_qlearning
 from app.bot.state_parser import get_professores_do_time
+from app.bot.q_learning import load_q_table, save_q_table
 
 def process_request(payload: dict) -> dict:
     try:
@@ -32,14 +33,19 @@ def handle_turn_phase(payload: dict) -> dict:
     prof_escolhido_nome = random.choice(list(nossos_professores.keys()))
     pos_prof = nossos_professores[prof_escolhido_nome]
     
+    q_table = load_q_table()
+
     try:
         acao_q = escolher_acao_qlearning(
             tabuleiro, 
             prof_escolhido_nome, 
             pos_prof["row"], 
-            pos_prof["col"]
+            pos_prof["col"],
+            q_table,
+            epsilon=0.0
         )
         if acao_q:
+            save_q_table(q_table)
             print(f"\n [DECISÃO DO BOT - TURNO] {json.dumps(acao_q)}")
             return acao_q
     except Exception as e:

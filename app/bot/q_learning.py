@@ -4,11 +4,11 @@ import random
 import copy
 from app.bot.state_parser import get_estado_local, get_acoes_validas
 
-Q_TABLE_PATH = os.path.join(os.path.dirname(__file__), "..", "storage", "q_table.json")
-#parametros do qlearning
-ALPHA = 0.5 # taxa de aprendizado
-EPSILON = 0.2  #chance de testar movs novos
-GAMMA = 0.9 # fator de desconto
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+Q_TABLE_PATH = os.path.join(BASE_DIR, "storage", "q_table.json")
+
+ALPHA = 0.5   
+GAMMA = 0.9   
 
 def load_q_table() -> dict:
     if not os.path.exists(Q_TABLE_PATH):
@@ -32,24 +32,20 @@ def calcular_recompensa(tabuleiro: list, pos_atual: dict, acao: dict) -> float:
     if nivel_destino > nivel_atual: # subir de nivel
         recompensa += 10.0
         
-    #ganhar o jogo
-    if nivel_destino == 3:
+    if nivel_destino == 3: #ganhar o jogo
         recompensa += 1000.0
         
     if nivel_destino < nivel_atual: # descer de nivel
         recompensa -= 5.0
         
-    #incentivo para mentorar para cima
     nivel_construcao = tabuleiro[acao["mentor_at"]["row"]][acao["mentor_at"]["col"]].get("level", 0)
-    if nivel_construcao < 4:
+    if nivel_construcao < 4: #incentivo para mentorar para cima
         recompensa += 1.0
 
     return recompensa
 
 
-def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int, pos_col: int) -> dict:
-    q_table = load_q_table()
-    
+def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int, pos_col: int, q_table: dict, epsilon: float = 0.0) -> dict:
     #pega estado local (3x3 em volta) e movs possiveis
     estado_atual = get_estado_local(tabuleiro, pos_linha, pos_col)
     acoes_validas = get_acoes_validas(tabuleiro, pos_linha, pos_col)
@@ -61,7 +57,7 @@ def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int
         q_table[estado_atual] = {}
         
     # escolha da açao
-    if random.uniform(0, 1) < EPSILON:
+    if random.uniform(0, 1) < epsilon:
         acao_escolhida = random.choice(acoes_validas)
     else:
         melhor_nota = float('-inf')
@@ -71,10 +67,8 @@ def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int
         for acao in acoes_validas:
             # transformacao de texto
             acao_str = f"M{acao['move_to']['row']},{acao['move_to']['col']}_B{acao['mentor_at']['row']},{acao['mentor_at']['col']}"
-            
-            # sem movimento nesse estado = nota 0
-            nota = q_table[estado_atual].get(acao_str, 0.0)
-            
+
+            nota = q_table[estado_atual].get(acao_str, 0.0)  # sem movimento nesse estado = nota 0
             if nota > melhor_nota:
                 melhor_nota = nota
                 acao_escolhida = acao
@@ -105,7 +99,7 @@ def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int
     q_novo = q_atual + ALPHA * (recompensa + (GAMMA * max_q_futuro) - q_atual) #eq de bellman
     
     q_table[estado_atual][acao_str] = q_novo
-    save_q_table(q_table)
+    
     return {
         "professor": professor_nome,
         "move_to": acao_escolhida["move_to"],
