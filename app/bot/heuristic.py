@@ -14,16 +14,14 @@ def get_posicionamento_aleatorio(payload: dict) -> dict:
 
 def get_acao_aleatoria_turno(payload: dict) -> dict:
     
-    mock_action = {
-        "move": {
+    return {
             "professor": "CLARO",
-            "to_row": 1,
-            "to_col": 2
-        },
-        "build": {
-            "row": 1,
-            "col": 3
+            "move": {
+                "row": 1,
+                "col": 0
+            },
+            "build": {
+                "row": 1,
+                "col": 1
+            }
         }
-    }
-    
-    return mock_action
