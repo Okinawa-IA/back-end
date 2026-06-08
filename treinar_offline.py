@@ -1,4 +1,4 @@
-# código gerado com IA para fazer o treinamento do nosso modelo e preenchimento da tabela Q
+# código gerado com ajuda de IA para fazer o treinamento do nosso modelo e preenchimento da tabela Q
 # =============================================================================================
 import random
 from app.bot.q_learning import escolher_acao_qlearning, load_q_table, save_q_table
@@ -17,7 +17,6 @@ def treinar(num_partidas=100000):
     vitorias_time2 = 0
     empates = 0
     
-    print("Carregando cérebro na RAM...")
     q_table = load_q_table()
     
     epsilon_inicial = 1.0
@@ -43,7 +42,7 @@ def treinar(num_partidas=100000):
         while turnos < 100:
             turnos += 1
             
-            # TIME 1
+            # Time 1 ------
             prof_t1 = random.choice(["CLARO", "REY"])
             pos_t1 = prof_pos[prof_t1]
             acao_t1 = escolher_acao_qlearning(tabuleiro, prof_t1, pos_t1["row"], pos_t1["col"], q_table, epsilon_atual)
@@ -55,7 +54,7 @@ def treinar(num_partidas=100000):
                     ganhador = 1
                     break
             
-            # TIME 2 (Self-play: Usa a mesma tabela e o mesmo epsilon)
+            # Time 2 (Self-play: Usa a mesma tabela e o mesmo epsilon)
             prof_t2 = random.choice(["KARIN", "BEATRIZ"])
             pos_t2 = prof_pos[prof_t2]
             acao_t2 = escolher_acao_qlearning(tabuleiro, prof_t2, pos_t2["row"], pos_t2["col"], q_table, epsilon_atual)
@@ -69,14 +68,14 @@ def treinar(num_partidas=100000):
                     
         if not ganhador: empates += 1
 
-        # Checkpoint: Salva fisicamente a cada 5.000 partidas para não estressar o HD
+        # Salva fisicamente a cada 5.000 partidas para não estressar o HD
         if partida % 5000 == 0:
             print(f"Partidas: {partida}/{num_partidas} | Vitórias T1: {vitorias_time1} | Vitórias T2: {vitorias_time2} | Empates: {empates} | Epsilon: {epsilon_atual:.2f}")
             save_q_table(q_table) 
             vitorias_time1 = vitorias_time2 = empates = 0 # Reseta parciais
             
-    # Garante salvar no final
-    save_q_table(q_table)
+
+    save_q_table(q_table) #salva fora do for
 
 if __name__ == "__main__":
     qtd = 50000

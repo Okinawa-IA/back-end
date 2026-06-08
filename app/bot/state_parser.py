@@ -36,11 +36,9 @@ def get_professores_do_time(payload: dict) -> dict:
     return professores_encontrados
 
 
-def get_estado_local(tabuleiro: list, pos_linha: int, pos_col: int) -> str:
-    """
-    Recorta uma área 3x3 ao redor do professor para ser a chave do Q-Learning.
-    Retorna uma string, ex: "1,1,2,X,0,1,P,0,-1"
-    """
+def get_estado_local(tabuleiro: list, pos_linha: int, pos_col: int) -> str: 
+    #diminui o tabuleiro em um estado local de tamanho 3x3
+    #retorna uma string com as posições
     visao = []
     for r in range(pos_linha - 1, pos_linha + 2):
         for c in range(pos_col - 1, pos_col + 2):
@@ -58,10 +56,7 @@ def get_estado_local(tabuleiro: list, pos_linha: int, pos_col: int) -> str:
                 
     return ",".join(visao)
 
-def get_acoes_validas(tabuleiro: list, pos_linha: int, pos_col: int) -> list:
-    """
-    Calcula para onde o professor pode ir (adjacente) e onde pode construir.
-    """
+def get_acoes_validas(tabuleiro: list, pos_linha: int, pos_col: int) -> list: #calcula onde o professor pode ir e q aluno pode mentorar
     acoes = []
     movimentos_adjacentes = [
         (-1, -1), (-1, 0), (-1, 1),

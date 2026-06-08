@@ -78,7 +78,8 @@ def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int
     q_atual = q_table[estado_atual].get(acao_str, 0.0) # nota antiga
     recompensa = calcular_recompensa(tabuleiro, {"row": pos_linha, "col": pos_col}, acao_escolhida)
     
-    #previsao do estado futuro
+    #previsao do estado futuro - essa parte de tab_futuro foi feita com ajuda de IA
+    #antes simplificavamos a eq. de bellman usando recompensa imediata (greedy)
     tab_futuro = copy.deepcopy(tabuleiro)
     tab_futuro[pos_linha][pos_col]["professor"] = None #posicao antiga 
     tab_futuro[acao_escolhida["move_to"]["row"]][acao_escolhida["move_to"]["col"]]["professor"] = professor_nome # posicao nova
@@ -99,7 +100,7 @@ def escolher_acao_qlearning(tabuleiro: list, professor_nome: str, pos_linha: int
     q_novo = q_atual + ALPHA * (recompensa + (GAMMA * max_q_futuro) - q_atual) #eq de bellman
     
     q_table[estado_atual][acao_str] = q_novo
-    
+
     return {
         "professor": professor_nome,
         "move_to": acao_escolhida["move_to"],

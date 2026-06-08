@@ -1,3 +1,5 @@
+#logger feito com ajuda de IA para registrar a chamada da API no render
+#usado para debugação e entendimento dos requisitos da chamada e devolução
 import json
 import os
 from datetime import datetime

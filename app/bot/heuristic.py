@@ -9,10 +9,10 @@ def get_posicionamento_aleatorio(payload: dict) -> dict:
     if espacos_vazios:
         return random.choice(espacos_vazios)
     
-    # Fallback extremo se não achar espaço
+    # se nao achar espaço
     return {"row": 0, "col": 0}
 
-def get_acao_aleatoria_turno(payload: dict) -> dict:
+def get_acao_aleatoria_turno(payload: dict) -> dict: #usado em casos de erro para nao quebrar o backend
    
     nossos_professores = get_professores_do_time(payload)
     
@@ -24,7 +24,7 @@ def get_acao_aleatoria_turno(payload: dict) -> dict:
     return {
         "professor": professor_escolhido, 
         "move_to": {
-            "row": random.randint(0, 4), # Chuta uma linha de 0 a 4
+            "row": random.randint(0, 4),
             "col": random.randint(0, 4)
         },
         "mentor_at": {
@@ -32,17 +32,3 @@ def get_acao_aleatoria_turno(payload: dict) -> dict:
             "col": random.randint(0, 4)
         }
     }
-
-    """
-    return {
-            "professor": "CLARO",
-            "move": {
-                "row": 1,
-                "col": 2
-            },
-            "mentor_at": {
-                "row": 0,
-                "col": 2
-            }
-        }
-    """

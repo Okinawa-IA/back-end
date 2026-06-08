@@ -15,12 +15,12 @@ def process_request(payload: dict) -> dict:
         else:
             return {}
     except Exception as error:
-        print(f"Erro crítico no processamento: {error}")
+        print(f"Erro critico no processamento: {error}")
         return {"row": 0, "col": 0} 
 
 def handle_setup_phase(payload: dict) -> dict:
     posicao = get_posicionamento_aleatorio(payload)
-    print(f"\n [DECISÃO DA BOT - SETUP] Posicionando em: {posicao}")
+    print(f"\n Jogando em: {posicao}")
     return posicao
 
 def handle_turn_phase(payload: dict) -> dict:
@@ -46,10 +46,10 @@ def handle_turn_phase(payload: dict) -> dict:
         )
         if acao_q:
             save_q_table(q_table)
-            print(f"\n [DECISÃO DO BOT - TURNO] {json.dumps(acao_q)}")
+            print(f"\n Ação Q-Learning: {json.dumps(acao_q)}")
             return acao_q
     except Exception as e:
-        print(f"Erro no Q-Learning: {e}. Caindo para Fallback.")
+        print(f"Erro no Q-Learning: {e}.")
         
     # caso de none ou erro usa random
     return get_acao_aleatoria_turno(payload)
