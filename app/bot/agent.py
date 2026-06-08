@@ -4,7 +4,7 @@ from app.bot.heuristic import get_posicionamento_aleatorio, get_acao_aleatoria_t
 from app.bot.q_learning import escolher_acao_qlearning
 from app.bot.state_parser import get_professores_do_time
 from app.bot.q_learning import load_q_table, save_q_table
-from app.bot.state_parser import get_acoes_validas
+from app.bot.state_parser import get_acoes_validas, get_estado_local
 
 tabela_q = load_q_table()
 
@@ -26,7 +26,7 @@ def handle_setup_phase(payload: dict) -> dict:
     print(f"\n Jogando em: {posicao}")
     return posicao
 
-def buscar_jogada_critica(tabuleiro: list, nossos_professores: dict) -> dict:
+def get_jogada_critica(tabuleiro: list, nossos_professores: dict) -> dict:
     #busca vitoria imediata ou bloqueio contra vitoria inimiga, caso nao achar retorna none
     
     jogada_defensiva = None
@@ -57,6 +57,40 @@ def buscar_jogada_critica(tabuleiro: list, nossos_professores: dict) -> dict:
 
     return jogada_defensiva
 
+def get_professor_defensivo(tabuleiro: list, nossos_professores: dict) -> str:
+    #pega o professor mais proximo de um inimigo em nivel 2 ou mais
+    inimigos = []
+    for r in range(5):
+        for c in range(5):
+            prof = tabuleiro[r][c].get("professor")
+            if prof and prof not in nossos_professores:
+                inimigos.append({"nome": prof, "row": r, "col": c, "level": tabuleiro[r][c].get("level", 0)})
+
+    inimigos_perigosos = [i for i in inimigos if i["level"] >= 2]
+    if not inimigos_perigosos:
+        return None
+
+    # pega o inimigo mais perto de ganhar
+    alvo = None
+    nivel_maximo = -1
+    for i in inimigos_perigosos:
+        if i["level"] > nivel_maximo:
+            nivel_maximo = i["level"]
+            alvo = i
+    if not alvo:
+        return None
+    
+    melhor_prof = None
+    menor_distancia = 999
+
+    for prof_nome, pos in nossos_professores.items():
+        dist = max(abs(pos["row"] - alvo["row"]), abs(pos["col"] - alvo["col"]))
+        if dist < menor_distancia:
+            menor_distancia = dist
+            melhor_prof = prof_nome
+
+    return melhor_prof
+
 def handle_turn_phase(payload: dict) -> dict:
     tabuleiro = payload.get("board", [])
     nossos_professores = get_professores_do_time(payload)
@@ -64,29 +98,47 @@ def handle_turn_phase(payload: dict) -> dict:
     if not nossos_professores:
         return get_acao_aleatoria_turno(payload) 
     
-    jogada_critica = buscar_jogada_critica(tabuleiro, nossos_professores)
+    jogada_critica = get_jogada_critica(tabuleiro, nossos_professores)
     if jogada_critica:
         print(f"\nJogada critica encontrada: {json.dumps(jogada_critica)}")
         return jogada_critica
 
-    #nao achou jogada critica - vai pro qlearning
-    prof_escolhido_nome = random.choice(list(nossos_professores.keys()))
-    pos_prof = nossos_professores[prof_escolhido_nome]
+    prof_defesa = get_professor_defensivo(tabuleiro, nossos_professores)
 
-    try:
-        acao_q = escolher_acao_qlearning(
-            tabuleiro, 
-            prof_escolhido_nome, 
-            pos_prof["row"], 
-            pos_prof["col"],
-            tabela_q,
-            epsilon=0.0
-        )
-        if acao_q:
-            print(f"\n Ação Q-Learning: {json.dumps(acao_q)}")
-            return acao_q
-    except Exception as e:
-        print(f"Erro no Q-Learning: {e}.")
+    professores_para_avaliar = [prof_defesa] if prof_defesa else list(nossos_professores.keys())
+
+    melhor_acao = None
+    melhor_nota = float('-inf')
+
+    for prof_nome in professores_para_avaliar:
+        pos_prof = nossos_professores[prof_nome]
+        try:
+            acao_q = escolher_acao_qlearning(
+                tabuleiro, 
+                prof_nome, 
+                pos_prof["row"], 
+                pos_prof["col"],
+                tabela_q,
+                epsilon=0.0
+            )
+            if acao_q:
+                estado = get_estado_local(tabuleiro, pos_prof["row"], pos_prof["col"])
+                acao_str = f"M{acao_q['move_to']['row']},{acao_q['move_to']['col']}_B{acao_q['mentor_at']['row']},{acao_q['mentor_at']['col']}"
+                
+                # resgata a nota da tabela q
+                nota = tabela_q.get(estado, {}).get(acao_str, 0.0)
+
+                if nota > melhor_nota or melhor_acao is None:
+                    melhor_nota = nota
+                    melhor_acao = acao_q
+
+        except Exception as e:
+            print(f"Erro no Q-Learning para {prof_nome}: {e}.")
+    if melhor_acao:
+        if prof_defesa:
+            print(f"\n Foco no {prof_defesa} para bloquear inimigos")
+        print(f"\nAção Q-Learning: {json.dumps(melhor_acao)} | Nota: {melhor_nota}")
+        return melhor_acao
         
     # caso de none ou erro usa random
     return get_acao_aleatoria_turno(payload)
