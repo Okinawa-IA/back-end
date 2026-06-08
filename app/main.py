@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.bot.agent import choose_move
+from app.bot.agent import process_request
+from app.core.logger import registrar_payload 
 
 app = FastAPI(title="Okinawa IA Bot Backend")
 
@@ -13,7 +13,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.get("/")
 def health_check():
     return {
@@ -22,20 +21,15 @@ def health_check():
         "message": "Backend do bot rodando",
     }
 
-
 @app.post("/move")
 async def move(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        payload = {}
-
-    print("\nPAYLOAD RECEBIDO DA API DO PROFESSOR")
-    print(payload)
-  
-
-    action = choose_move(payload)
-
-    return {
-        "move": action
-    }
+        return {} #erro de leitura
+    
+    registrar_payload(payload)
+    
+    response_data = process_request(payload)
+    
+    return response_data

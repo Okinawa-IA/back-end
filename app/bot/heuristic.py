@@ -1,18 +1,34 @@
 import random
+from app.bot.state_parser import get_espacos_vazios, get_professores_do_time
 
+def get_posicionamento_aleatorio(payload: dict) -> dict:
+    
+    board = payload.get("board", [])
+    espacos_vazios = get_espacos_vazios(board)
+    
+    if espacos_vazios:
+        return random.choice(espacos_vazios)
+    
+    # se nao achar espaço
+    return {"row": 0, "col": 0}
 
-VALID_MOVES = ["UP", "DOWN", "LEFT", "RIGHT"]
+def get_acao_aleatoria_turno(payload: dict) -> dict: #usado em casos de erro para nao quebrar o backend
+   
+    nossos_professores = get_professores_do_time(payload)
+    
+    if not nossos_professores:
+        return {}
 
-
-def choose_heuristic_move(game_state: dict) -> str:
-    """
-    Primeira versão do bot.
-
-    Como ainda não sabemos exatamente o formato do payload enviado
-    pela API do professor, começamos retornando um movimento válido
-    aleatório.
-
-    Depois vamos ler board, player position, professores etc.
-    """
-
-    return random.choice(VALID_MOVES)
+    professor_escolhido = random.choice(list(nossos_professores.keys()))
+    
+    return {
+        "professor": professor_escolhido, 
+        "move_to": {
+            "row": random.randint(0, 4),
+            "col": random.randint(0, 4)
+        },
+        "mentor_at": {
+            "row": random.randint(0, 4),
+            "col": random.randint(0, 4)
+        }
+    }
