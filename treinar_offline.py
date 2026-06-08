@@ -79,6 +79,6 @@ def treinar(num_partidas=100000):
 
 if __name__ == "__main__":
     qtd = 50000
-    print(f"Iniciando treinamento turbo de {qtd} partidas...")
+    print(f"Iniciando treinamento de {qtd} partidas...")
     treinar(qtd)
-    print("\n✅ TREINAMENTO FINALIZADO COM SUCESSO!")
+    print("\nFinalizado")
