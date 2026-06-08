@@ -54,7 +54,7 @@ def treinar(num_partidas=100000):
                     ganhador = 1
                     break
             
-            # Time 2 (Self-play: Usa a mesma tabela e o mesmo epsilon)
+            # time 2 - usa a mesma tabela e epsilon
             prof_t2 = random.choice(["KARIN", "BEATRIZ"])
             pos_t2 = prof_pos[prof_t2]
             acao_t2 = escolher_acao_qlearning(tabuleiro, prof_t2, pos_t2["row"], pos_t2["col"], q_table, epsilon_atual)
@@ -68,11 +68,11 @@ def treinar(num_partidas=100000):
                     
         if not ganhador: empates += 1
 
-        # Salva fisicamente a cada 5.000 partidas para não estressar o HD
+        # save fisico a cada 5k partidas
         if partida % 5000 == 0:
             print(f"Partidas: {partida}/{num_partidas} | Vitórias T1: {vitorias_time1} | Vitórias T2: {vitorias_time2} | Empates: {empates} | Epsilon: {epsilon_atual:.2f}")
             save_q_table(q_table) 
-            vitorias_time1 = vitorias_time2 = empates = 0 # Reseta parciais
+            vitorias_time1 = vitorias_time2 = empates = 0 # reseta parciais
             
 
     save_q_table(q_table) #salva fora do for

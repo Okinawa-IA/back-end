@@ -66,6 +66,12 @@ def get_acoes_validas(tabuleiro: list, pos_linha: int, pos_col: int) -> list: #c
     
     nivel_atual = tabuleiro[pos_linha][pos_col].get("level", 0)
 
+    prof_atual = tabuleiro[pos_linha][pos_col].get("professor")
+    if prof_atual in ["CLARO", "REY"]:
+        aliados = ["CLARO", "REY"]
+    else:
+        aliados = ["KARIN", "BEATRIZ"]
+
     for dr, dc in movimentos_adjacentes:
         nova_linha, nova_col = pos_linha + dr, pos_col + dc
         
@@ -79,14 +85,34 @@ def get_acoes_validas(tabuleiro: list, pos_linha: int, pos_col: int) -> list: #c
                 #procura pra mentorar
                 for br, bc in movimentos_adjacentes:
                     b_linha, b_col = nova_linha + br, nova_col + bc
+
                     if 0 <= b_linha < 5 and 0 <= b_col < 5:
-                        # não pode mentorar onde tem prof
-                        if tabuleiro[b_linha][b_col].get("professor") is None or (b_linha == pos_linha and b_col == pos_col):
-                            if tabuleiro[b_linha][b_col].get("level", 0) < 4:
-                                acoes.append({
-                                    "move_to": {"row": nova_linha, "col": nova_col},
-                                    "mentor_at": {"row": b_linha, "col": b_col}
-                                })
+                       if tabuleiro[b_linha][b_col].get("professor") is None or (b_linha == pos_linha and b_col == pos_col):
+                            nivel_mentoria = tabuleiro[b_linha][b_col].get("level", 0)
+                            
+                            if nivel_mentoria < 4:
+                            
+                                jogada_suicida = False
                                 
-                                break 
+                                # se o aluno mentorado vai ser de nivel 3
+                                if nivel_mentoria == 2:
+                                    #checa se tem inimigos adjacentes
+                                    for vr, vc in movimentos_adjacentes: #corrigido por ia
+                                        vizinho_r, vizinho_c = b_linha + vr, b_col + vc
+                                        if 0 <= vizinho_r < 5 and 0 <= vizinho_c < 5:
+                                            vizinho = tabuleiro[vizinho_r][vizinho_c]
+                                            prof_vizinho = vizinho.get("professor")
+                                            
+                                            if prof_vizinho is not None and prof_vizinho not in aliados and (vizinho_r != pos_linha or vizinho_c != pos_col):
+                                                if vizinho.get("level", 0) >= 2:
+                                                    jogada_suicida = True
+                                                    break
+                                
+                                
+                                if not jogada_suicida:
+                                    acoes.append({
+                                        "move_to": {"row": nova_linha, "col": nova_col},
+                                        "mentor_at": {"row": b_linha, "col": b_col}
+                                    })
+                                    break 
     return acoes
