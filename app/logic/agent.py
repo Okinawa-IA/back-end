@@ -18,15 +18,23 @@ class OkinawaAgent:
     def get_random_turn(self, request: AITurnRequest) -> PlayerTurnResponse:
         """Heurística de fallback em caso de erro ou sem opções."""
         my_professors = BoardState.get_team_professors(request.board, request.your_team)
-        if not my_professors:
-            return PlayerTurnResponse(professor="UNKNOWN", move_to=Position(row=0, col=0))
+        
+        prof_nomes = list(my_professors.keys())
+        random.shuffle(prof_nomes)
 
-        prof_name = random.choice(list(my_professors.keys()))
-        return PlayerTurnResponse(
-            professor=prof_name,
-            move_to=Position(row=random.randint(0, 4), col=random.randint(0, 4)),
-            mentor_at=Position(row=random.randint(0, 4), col=random.randint(0, 4))
-        )
+        for prof_name in prof_nomes:
+            pos = my_professors[prof_name]
+            acoes_validas = BoardState.get_valid_moves(request.board, pos, request.your_team)
+            
+            if acoes_validas:
+                acao_escolhida = random.choice(acoes_validas)
+                return PlayerTurnResponse(
+                    professor=prof_name,
+                    move_to=acao_escolhida["move_to"],
+                    mentor_at=acao_escolhida["mentor_at"]
+                )
+                
+        return PlayerTurnResponse(professor="NENHUM", move_to=Position(row=0, col=0))
 
     def get_critical_move(self, request: AITurnRequest, my_professors: Dict[str, Position]) -> Optional[PlayerTurnResponse]:
         #busca vitoria imediata ou bloqueio
@@ -91,7 +99,10 @@ class OkinawaAgent:
 
         #avalia defesa
         prof_defesa = self.get_defensive_professor(request, my_professors)
-        profs_to_evaluate = [prof_defesa] if prof_defesa else list(my_professors.keys())
+        profs_to_evaluate = list(my_professors.keys())
+        if prof_defesa and prof_defesa in profs_to_evaluate:
+            profs_to_evaluate.remove(prof_defesa)
+            profs_to_evaluate.insert(0, prof_defesa)
 
         melhor_acao_final = None
         melhor_nota_geral = float('-inf')
