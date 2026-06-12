@@ -36,21 +36,21 @@ O projeto segue os princípios de Orientação a Objetos:
 BACK-END/
 ├── app/
 │   ├── logic/
-│   │   ├── agent.py      # Cérebro estratégico (Heurísticas e Delegação)
-│   │   ├── qtable.py     # Gerenciador do modelo de Machine Learning (Bellman)
-│   │   └── state.py      # Motor físico (Limites, validações e visão 3x3)
+│   │   ├── agent.py    
+│   │   ├── qtable.py     
+│   │   └── state.py      
 │   │
-│   ├── main.py           # Roteador da API FastAPI
-│   └── schemas.py        # Contratos DTO e validação Pydantic
+│   ├── main.py           
+│   └── schemas.py        
 │
 ├── storage/
-│   └── q_table.pickle    # Arquivo binário (Cérebro treinado do bot)
+│   └── q_table.pickle    
 │
 ├── .gitignore
 ├── README.md
 ├── REPORT.md
 ├── requirements.txt
-└── treinar_offline.py    # Script de treinamento Self-Play
+└── treinar_offline.py    
 ```
 
 ## Instalação
