@@ -62,16 +62,12 @@ Após pesquisas e conversas com os professores do curso, ficaram claras algumas 
 Dada a data de estruturação do backend e do agente, tivemos pouco tempo de sobra para a fase de treinamento. Além disso, embora a orientação de trocar o formato de JSON para `.pickle` ajudasse bastante, isso exigiu que refizéssemos o treinamento, consumindo horas importantes na reta final do projeto. Um melhor planejamento e uma validação antecipada do formato de armazenamento dos dados evitariam esse problema.
 
 ### Limite de Armazenamento
-Tivemos um sério problema de estrutura, onde não conseguimos prolongar o treinamento da IA para 200 mil partidas ou mais porque a Tabela Q ficou grande demais para o limite de commit do GitHub (100MB). Uma melhoria arquitetural envolveria modelar o armazenamento utilizando bibliotecas numéricas mais compactas (como matrizes do NumPy) ou realizar a compressão e otimização dos tipos de dados (tipos numéricos menores em vez de strings longas) para que menos bytes fossem consumidos. Talvez dessa forma conseguíssemos até mapear o tabuleiro inteiro no treinamento com Q-learning.
+Tivemos um sério problema de estrutura, onde não conseguimos prolongar o treinamento da IA para 200 mil partidas ou mais porque a Tabela Q ficou grande demais para o limite de commit do GitHub (100MB). Uma melhoria arquitetural envolveria modelar o armazenamento utilizando bibliotecas numéricas mais compactas (como matrizes do NumPy) ou realizar a compressão e otimização dos tipos de dados (tipos numéricos menores em vez de strings longas) para que menos bytes fossem consumidos.
 
-## 4. O processo de construção e principais desafios
+## 4 - O processo de construção e principais desafios
 
 A construção do nosso agente foi um processo de evolução contínua. Implementar o Q-Learning foi um grande desafio. Foram necessários realizar chamadas em grupo para traduzir a matemática para o código e definir como o agente iria de fato "enxergar" o jogo na Tabela Q.
 
-Fazer a equação de Bellman funcionar
+Pazer a equação de Bellman funcionar e prever a jogada futura precisamos prever a melhor jogada do próximo estado. Para resolver isso, implementamos um mecanismo utilizando a biblioteca `copy`. O bot tira uma cópia profunda (`deepcopy`) do tabuleiro na memória RAM, simula a sua jogada nesse tabuleiro imaginário, avalia a nova posição e descarta a matriz.
 
-O primeiro grande desafio foi estrutural: abandonamos um rascunho procedural confuso e refatoramos tudo para o paradigma de Orientação a Objetos (OOP). Fazer o fluxo de dados se encaixar perfeitamente — com o Pydantic blindando a entrada, o motor físico (`state.py`) validando as regras, e o Agente decidindo quando usar a IA — exigiu muito planejamento arquitetural.
-
-Contudo, 
-
-Para a Equação de Bellman funcionar corretamente, o algoritmo precisa prever a melhor jogada do próximo estado. Para resolver isso, implementamos um mecanismo utilizando a biblioteca `copy`. O bot tira uma cópia profunda (`deepcopy`) do tabuleiro na memória RAM, simula a sua jogada nesse tabuleiro imaginário, avalia a nova posição e descarta a matriz.
+Também tivemos que realizar uma reestruturação. Abandonamos um rascunho procedural confuso e refatoramos tudo para o paradigma de Orientação a Objetos (OOP). 
