@@ -66,8 +66,8 @@ Tivemos um sério problema de estrutura, onde não conseguimos prolongar o trein
 
 ## 4 - O processo de construção e principais desafios
 
-A construção do nosso agente foi um processo de evolução contínua. Implementar o Q-Learning foi um grande desafio. Foram necessários realizar chamadas em grupo para traduzir a matemática para o código e definir como o agente iria de fato "enxergar" o jogo na Tabela Q.
+A construção do nosso agente foi um processo de evolução contínua. Implementar o Q-Learning foi um grande desafio. Foi necessário realizar chamadas em grupo para traduzir a matemática para o código e definir como o agente iria de fato "enxergar" o jogo na Tabela Q.
 
-Pazer a equação de Bellman funcionar e prever a jogada futura precisamos prever a melhor jogada do próximo estado. Para resolver isso, implementamos um mecanismo utilizando a biblioteca `copy`. O bot tira uma cópia profunda (`deepcopy`) do tabuleiro na memória RAM, simula a sua jogada nesse tabuleiro imaginário, avalia a nova posição e descarta a matriz.
+Para fazer a equação de Bellman funcionar precisamos prever a melhor jogada do próximo estado. Para resolver isso, implementamos um mecanismo utilizando a biblioteca `copy`. O bot tira uma cópia profunda (`deepcopy`) do tabuleiro na memória RAM, simula a sua jogada nesse tabuleiro imaginário, avalia a nova posição e descarta a matriz.
 
 Também tivemos que realizar uma reestruturação. Abandonamos um rascunho procedural confuso e refatoramos tudo para o paradigma de Orientação a Objetos (OOP). 
