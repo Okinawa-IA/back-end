@@ -53,8 +53,9 @@ class QLearningManager:
 
     def choose_action(self, board: list[list[Cell]], prof_name: str, pos: Position, epsilon: float = 0.0) -> Optional[dict]:
         estado_atual = BoardState.get_local_state(board, pos.row, pos.col)
-        # O time passado aqui só importa para o filtro suicida saber quem é aliado
+
         team = 1 if prof_name in ["CLARO", "REY"] else 2 
+
         acoes_validas = BoardState.get_valid_moves(board, pos, team)
         
         if not acoes_validas:
@@ -79,7 +80,7 @@ class QLearningManager:
                     melhor_nota = nota
                     acao_escolhida = acao
                     
-        # Simulação de Bellman (Atualização online - mantida do seu código original)
+        
         move = acao_escolhida["move_to"]
         mentor = acao_escolhida["mentor_at"]
         acao_str = f"M{move.row},{move.col}_B{mentor.row},{mentor.col}"
@@ -87,7 +88,6 @@ class QLearningManager:
         q_atual = self.q_table[estado_atual].get(acao_str, 0.0)
         recompensa = self.calculate_reward(board, pos, acao_escolhida)
         
-        # Deepcopy seguro com Pydantic
         tab_futuro = copy.deepcopy(board)
         tab_futuro[pos.row][pos.col].professor = None 
         tab_futuro[move.row][move.col].professor = prof_name 

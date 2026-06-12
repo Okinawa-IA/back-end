@@ -1,61 +1,56 @@
+# Okinawa Bot API - PI5
 
-````
-# Okinawa Bot API
+Backend em Python com FastAPI para o agente do projeto PI5.
 
-Backend em Python com FastAPI para o bot do projeto PI5.
-
-Este serviço expõe um endpoint público de movimento do jogador, que será cadastrado na API principal do professor como `ai_player_move_endpoint`.
+Este serviço expõe um endpoint público de movimento do jogador, que é cadastrado na API principal do torneio como `ai_player_move_endpoint`. O agente utiliza uma arquitetura de Inteligência Híbrida (Heurísticas Globais + Q-Learning Local).
 
 ## Objetivo
 
-O objetivo deste backend é receber o estado atual da partida enviado pela API do professor e retornar uma ação de movimento para o jogador inteligente do grupo **Okinawa IA**.
+O objetivo deste backend é receber o estado atual da partida enviado pela API do professor e retornar, em tempo real (menos de 5 segundos), uma ação de movimento e mentoria para o time **Okinawa IA**.
 
 Fluxo esperado:
 
 ```txt
 API do professor
         ↓
-POST /move
+POST /move (JSON com tabuleiro 5x5)
         ↓
-Backend Okinawa Bot API
+Backend Okinawa Bot API (Pydantic -> State -> Agent -> Q-Table)
         ↓
-Resposta com movimento do jogador
-````
+Resposta com movimento do jogador e mentoria
+```
 
 ## Tecnologias utilizadas
 
-* Python
-* FastAPI
-* Uvicorn
-* Pydantic
-* Python Dotenv
+* **Python 3**
+* **FastAPI** 
+* **Uvicorn** 
+* **Pydantic** 
+* **Pickle** 
 
 ## Estrutura do projeto
 
+O projeto segue os princípios de Orientação a Objetos:
+
 ```txt
-bot-backend/
+BACK-END/
 ├── app/
-│   ├── main.py
+│   ├── logic/
+│   │   ├── agent.py      # Cérebro estratégico (Heurísticas e Delegação)
+│   │   ├── qtable.py     # Gerenciador do modelo de Machine Learning (Bellman)
+│   │   └── state.py      # Motor físico (Limites, validações e visão 3x3)
 │   │
-│   ├── bot/
-│   │   ├── agent.py
-│   │   ├── heuristic.py
-│   │   ├── q_learning.py
-│   │   └── state_parser.py
-│   │
-│   ├── core/
-│   │   └── config.py
-│   │
-│   ├── models/
-│   │   └── schemas.py
-│   │
-│   └── storage/
-│       └── q_table.json
+│   ├── main.py           # Roteador da API FastAPI
+│   └── schemas.py        # Contratos DTO e validação Pydantic
 │
-├── requirements.txt
-├── .env
+├── storage/
+│   └── q_table.pickle    # Arquivo binário (Cérebro treinado do bot)
+│
 ├── .gitignore
-└── README.md
+├── README.md
+├── REPORT.md
+├── requirements.txt
+└── treinar_offline.py    # Script de treinamento Self-Play
 ```
 
 ## Instalação
@@ -66,11 +61,6 @@ No Windows:
 
 ```bash
 python -m venv .venv
-```
-
-Ativar o ambiente virtual:
-
-```bash
 .venv\Scripts\activate
 ```
 
@@ -83,51 +73,22 @@ source .venv/bin/activate
 
 ### 2. Instalar dependências
 
-Com o ambiente virtual ativado, rode:
+Com o ambiente virtual ativado, instale as bibliotecas necessárias:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Arquivo `requirements.txt`
-
-O arquivo `requirements.txt` deve conter:
-
-```txt
-fastapi
-uvicorn
-python-dotenv
-pydantic
-```
-
-Essas dependências são responsáveis por:
-
-```txt
-fastapi        → criação da API
-uvicorn        → servidor para rodar o FastAPI
-python-dotenv  → leitura de variáveis de ambiente
-pydantic       → validação de dados
-```
-
 ## Como rodar localmente
 
-Na raiz do projeto, execute:
+Na raiz do projeto, execute o servidor de desenvolvimento:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-A API ficará disponível em:
-
-```txt
-http://127.0.0.1:8000
-```
-
-A documentação automática ficará disponível em:
-
-```txt
-http://127.0.0.1:8000/docs
-```
+A API ficará disponível em: `http://127.0.0.1:8000`
+A documentação interativa (Swagger) ficará em: `http://127.0.0.1:8000/docs`
 
 ## Endpoints
 
@@ -137,9 +98,7 @@ http://127.0.0.1:8000/docs
 GET /
 ```
 
-Retorna uma mensagem indicando que o backend está rodando.
-
-Exemplo de resposta:
+Retorna o status da infraestrutura. Exemplo de resposta:
 
 ```json
 {
@@ -155,93 +114,43 @@ Exemplo de resposta:
 POST /move
 ```
 
-Endpoint chamado pela API do professor para solicitar o próximo movimento do jogador.
+Endpoint que recebe o `AITurnRequest` completo e devolve a próxima jogada calculada pela IA.
 
-Resposta atual:
-
-```json
-{
-  "move": "UP"
-}
-```
-
-Neste primeiro momento, o bot retorna um movimento simples. Depois, a lógica será evoluída para heurística e Q-Learning.
-
-## Estratégia do bot
-
-A estratégia planejada é seguir três etapas:
-
-```txt
-1. Heurística simples
-2. Q-Learning
-3. Fallback aleatório
-```
-
-### Heurística
-
-A heurística inicial deve analisar o estado do tabuleiro e tentar mover o jogador em direção ao professor mais próximo.
-
-### Q-Learning
-
-Depois da heurística inicial, será implementado Q-Learning para permitir que o bot aprenda melhores ações a partir dos estados da partida.
-
-### Fallback
-
-Caso ocorra algum erro na escolha da jogada, o bot deve retornar um movimento válido padrão para não quebrar a partida.
-
-## Deploy
-
-O backend precisa estar publicado em uma URL pública, pois a API do professor não consegue acessar o ambiente local:
-
-```txt
-http://127.0.0.1:8000/move
-```
-
-Exemplo de URL pública esperada:
-
-```txt
-https://okinawa-bot-api.onrender.com/move
-```
-
-Depois do deploy, essa URL deve ser cadastrada no jogador usando o endpoint da API principal:
+Exemplo de resposta de sucesso (`PlayerTurnResponse`):
 
 ```json
 {
-  "ai_player_move_endpoint": "https://okinawa-bot-api.onrender.com/move"
+  "professor": "CLARO",
+  "move_to": {
+    "row": 1,
+    "col": 2
+  },
+  "mentor_at": {
+    "row": 1,
+    "col": 3
+  }
 }
 ```
 
-## Comando de deploy no Render
+## Estratégia da Inteligência (Okinawa IA)
 
-Build Command:
+Para contornar os limites de RAM na nuvem e o timeout da partida, o bot foi estruturado em três camadas táticas de Inteligência Híbrida:
 
-```bash
-pip install -r requirements.txt
+1. **Heurística Global (Visão Macro):** O bot rastreia o tabuleiro 5x5 inteiro. Se encontrar uma condição de vitória garantida, ou se precisar bloquear a vitória iminente do inimigo (fechando um Nível 3), ele age instantaneamente, ignorando a Tabela Q.
+2. **Q-Learning Tabular (Visão Micro):** Sem emergências globais, a IA corta uma matriz 3x3 focada no professor e consulta o arquivo `q_table.pickle`. Treinado com mais de 150.000 partidas em Self-Play, o algoritmo toma a decisão de posicionamento e combate de curto alcance que possuir a maior nota histórica (Q-Value).
+3. **Fallback Aleatório:** Uma rede de segurança. Se o professor ficar totalmente encurralado pela física do jogo e o Q-Learning não retornar nada, o bot calcula um movimento aleatório estritamente dentro das leis do tabuleiro para não quebrar a partida e evitar desclassificação.
+
+## Deploy no Railway
+
+A API está publicada no Railway e atende diretamente às requisições do servidor central da disciplina.
+
+* **URL Base:** `https://back-end-production-f7ba.up.railway.app/`
+* **URL do Endpoint de Jogada:** `https://back-end-production-f7ba.up.railway.app/move`
+
+Campo de endpoint de movimento abaixo:
+
+```json
+{
+  "ai_player_move_endpoint": "https://back-end-production-f7ba.up.railway.app/move"
+}
 ```
-
-Start Command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-## Próximos passos
-
-* Publicar o backend no Render.
-* Atualizar o endpoint de movimento do jogador.
-* Iniciar uma partida.
-* Verificar nos logs qual payload a API do professor envia para o `/move`.
-* Implementar o parser do estado da partida.
-* Criar a heurística de movimento.
-* Evoluir para Q-Learning.
-
-````
-
-E confere se o `requirements.txt` está assim:
-
-```txt
-fastapi
-uvicorn
-python-dotenv
-pydantic
-````
