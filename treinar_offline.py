@@ -1,26 +1,39 @@
-# código gerado com ajuda de IA para fazer o treinamento do nosso modelo e preenchimento da tabela Q
-# =============================================================================================
+import os
+import pickle
 import random
-from app.bot.q_learning import escolher_acao_qlearning, load_q_table, save_q_table
-from app.bot.state_parser import get_acoes_validas
+from app.schemas import Cell, Position, TeamID
+from app.logic.state import BoardState
+from app.logic.qtable import QLearningManager
 
-def criar_tabuleiro_vazio():
-    return [[{"level": 0, "professor": None} for _ in range(5)] for _ in range(5)]
+# pega o caminho absoluto da pasta storage
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STORAGE_DIR = os.path.join(BASE_DIR, "storage")
 
-def aplicar_acao(tabuleiro, prof_nome, pos_antiga, acao):
-    tabuleiro[pos_antiga["row"]][pos_antiga["col"]]["professor"] = None
-    tabuleiro[acao["move_to"]["row"]][acao["move_to"]["col"]]["professor"] = prof_nome
-    tabuleiro[acao["mentor_at"]["row"]][acao["mentor_at"]["col"]]["level"] += 1
+def criar_tabuleiro_vazio() -> list[list[Cell]]:
+    return [[Cell(level=0, professor=None) for _ in range(5)] for _ in range(5)]
 
-def treinar(num_partidas=100000):
-    vitorias_time1 = 0
-    vitorias_time2 = 0
+def aplicar_acao(tabuleiro: list[list[Cell]], prof_nome: str, pos_antiga: Position, acao: dict):
+    move_to = acao["move_to"]
+    mentor_at = acao["mentor_at"]
+    
+    tabuleiro[pos_antiga.row][pos_antiga.col].professor = None
+    tabuleiro[move_to.row][move_to.col].professor = prof_nome
+    tabuleiro[mentor_at.row][mentor_at.col].level += 1
+
+def treinar(num_partidas=1000000):
+    vitorias_t1 = 0
+    vitorias_t2 = 0
     empates = 0
     
-    q_table = load_q_table()
+    q_manager = QLearningManager()
     
     epsilon_inicial = 1.0
     epsilon_final = 0.1
+    
+    snapshot_count = 1 # contador para os arquivos pickle
+    
+    #garante que a pasta existe antes de salvar
+    os.makedirs(STORAGE_DIR, exist_ok=True)
     
     for partida in range(1, num_partidas + 1):
         tabuleiro = criar_tabuleiro_vazio()
@@ -30,10 +43,9 @@ def treinar(num_partidas=100000):
         
         for i, nome in enumerate(profs):
             r, c = posicoes[i]
-            tabuleiro[r][c]["professor"] = nome
-            prof_pos[nome] = {"row": r, "col": c}
+            tabuleiro[r][c].professor = nome
+            prof_pos[nome] = Position(row=r, col=c)
             
-        # Decaimento linear do Epsilon
         epsilon_atual = epsilon_inicial - (epsilon_inicial - epsilon_final) * (partida / num_partidas)
         
         turnos = 0
@@ -42,43 +54,48 @@ def treinar(num_partidas=100000):
         while turnos < 100:
             turnos += 1
             
-            # Time 1 ------
-            prof_t1 = random.choice(["CLARO", "REY"])
-            pos_t1 = prof_pos[prof_t1]
-            acao_t1 = escolher_acao_qlearning(tabuleiro, prof_t1, pos_t1["row"], pos_t1["col"], q_table, epsilon_atual)
+            # --- TURNO DO TIME 1 (TURING) ---
+            prof_t1_nome = random.choice(["CLARO", "REY"])
+            pos_t1 = prof_pos[prof_t1_nome]
+            
+            acao_t1 = q_manager.choose_action(tabuleiro, prof_t1_nome, pos_t1, epsilon_atual)
             if acao_t1:
-                aplicar_acao(tabuleiro, prof_t1, pos_t1, acao_t1)
-                prof_pos[prof_t1] = acao_t1["move_to"]
-                if tabuleiro[acao_t1["move_to"]["row"]][acao_t1["move_to"]["col"]]["level"] == 3:
-                    vitorias_time1 += 1
+                aplicar_acao(tabuleiro, prof_t1_nome, pos_t1, acao_t1)
+                prof_pos[prof_t1_nome] = acao_t1["move_to"]
+                if tabuleiro[acao_t1["move_to"].row][acao_t1["move_to"].col].level == 3:
+                    vitorias_t1 += 1
                     ganhador = 1
                     break
             
-            # time 2 - usa a mesma tabela e epsilon
-            prof_t2 = random.choice(["KARIN", "BEATRIZ"])
-            pos_t2 = prof_pos[prof_t2]
-            acao_t2 = escolher_acao_qlearning(tabuleiro, prof_t2, pos_t2["row"], pos_t2["col"], q_table, epsilon_atual)
+            # --- TURNO DO TIME 2 (LOVELACE) ---
+            prof_t2_nome = random.choice(["KARIN", "BEATRIZ"])
+            pos_t2 = prof_pos[prof_t2_nome]
+            
+            acao_t2 = q_manager.choose_action(tabuleiro, prof_t2_nome, pos_t2, epsilon_atual)
             if acao_t2:
-                aplicar_acao(tabuleiro, prof_t2, pos_t2, acao_t2)
-                prof_pos[prof_t2] = acao_t2["move_to"]
-                if tabuleiro[acao_t2["move_to"]["row"]][acao_t2["move_to"]["col"]]["level"] == 3:
-                    vitorias_time2 += 1
+                aplicar_acao(tabuleiro, prof_t2_nome, pos_t2, acao_t2)
+                prof_pos[prof_t2_nome] = acao_t2["move_to"]
+                if tabuleiro[acao_t2["move_to"].row][acao_t2["move_to"].col].level == 3:
+                    vitorias_t2 += 1
                     ganhador = 2
                     break
                     
         if not ganhador: empates += 1
 
-        # save fisico a cada 5k partidas
-        if partida % 5000 == 0:
-            print(f"Partidas: {partida}/{num_partidas} | Vitórias T1: {vitorias_time1} | Vitórias T2: {vitorias_time2} | Empates: {empates} | Epsilon: {epsilon_atual:.2f}")
-            save_q_table(q_table) 
-            vitorias_time1 = vitorias_time2 = empates = 0 # reseta parciais
+        if partida % 50000 == 0:
+            print(f"\n[{partida}/{num_partidas}] Vitórias T1: {vitorias_t1} | Vitórias T2: {vitorias_t2} | Empates: {empates} | Epsilon: {epsilon_atual:.2f}")
             
-
-    save_q_table(q_table) #salva fora do for
+            snapshot_path = os.path.join(STORAGE_DIR, f"qtable{snapshot_count}.pickle")
+            with open(snapshot_path, "wb") as file:
+                pickle.dump(q_manager.q_table, file)
+                
+            tamanho_kb = os.path.getsize(snapshot_path) / 1024
+            print(f"Salvo: {snapshot_path} ({tamanho_kb:.2f} KB)")
+            
+            snapshot_count += 1
+            vitorias_t1 = vitorias_t2 = empates = 0
 
 if __name__ == "__main__":
-    qtd = 50000
-    print(f"Iniciando treinamento de {qtd} partidas...")
-    treinar(qtd)
-    print("\nFinalizado")
+    print(f"Iniciando treinamento Self-Play...")
+    treinar(1000000)
+    print("\nTreinamento Finalizado!")

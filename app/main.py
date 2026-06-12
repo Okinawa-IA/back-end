@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.bot.agent import process_request
-from app.core.logger import registrar_payload 
+from app.schemas import AITurnRequest, TurnPhase
+from app.logic.agent import OkinawaAgent
 
 app = FastAPI(title="Okinawa IA Bot Backend")
 
@@ -13,6 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+agent = OkinawaAgent()
+
 @app.get("/")
 def health_check():
     return {
@@ -22,14 +24,11 @@ def health_check():
     }
 
 @app.post("/move")
-async def move(request: Request):
-    try:
-        payload = await request.json()
-    except Exception:
-        return {} #erro de leitura
-    
-    registrar_payload(payload)
-    
-    response_data = process_request(payload)
-    
-    return response_data
+async def move(body: AITurnRequest):
+    """
+    Recebe o estado completo tipado (AITurnRequest) e roteia para o agente.
+    """
+    if body.turn_phase == TurnPhase.SETUP:
+        return agent.handle_setup(body)
+    else:
+        return agent.handle_turn(body)
